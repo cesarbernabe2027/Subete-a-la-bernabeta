@@ -255,15 +255,16 @@ select.sel{width:100%;padding:11px;border-radius:11px;background:var(--bg2);bord
       <div class="grp" id="grpModelo">
         <h4>Calidad del recorte</h4>
         <select id="model" class="sel">
-          <option value="isnet_fp16">Normal · 88 MB (recomendado)</option>
-          <option value="ben2">Máxima calidad · 209 MB</option>
+          <option value="mp">Ligero · 27 MB (recomendado)</option>
+          <option value="isnet_fp16">Alta · 88 MB</option>
+          <option value="ben2">Máxima · 209 MB</option>
         </select>
         <div class="mini">
           <button id="bReAI"><span class="ic" data-i="refresh-cw"></span>Volver a recortar</button>
           <button id="bAiReset"><span class="ic" data-i="rotate-ccw"></span>Deshacer mis retoques</button>
         </div>
         <p class="note" id="ben2Note" style="display:none"><span class="pill wr">Máxima calidad</span> Borde muy superior, sin halo. Descarga 209 MB y pide bastante memoria: necesita una GPU decente. Si falla, vuelve sola al motor normal.</p>
-        <p class="note" id="dlNote">Se descarga una vez y queda guardado en el equipo. El de <b>44 MB</b> gasta menos datos pero deja el borde del cuerpo más impreciso.</p>
+        <p class="note" id="dlNote"><b>Ligero</b>: modelo de Google que separa el cabello y afina el borde usando la foto como guía. Va bien en cualquier teléfono. <b>Alta</b> y <b>Máxima</b> piden mucha más memoria: solo para computadoras.</p>
       </div>
 
       <div class="grp">
@@ -275,11 +276,26 @@ select.sel{width:100%;padding:11px;border-radius:11px;background:var(--bg2);bord
       </div>
 
       <div class="grp">
+        <h4>Integración con el fondo</h4>
+        <div class="sw"><span>Integrar el recorte</span><input type="checkbox" id="inOn" checked><label class="tg" for="inOn"></label></div>
+        <div class="row"><span class="lbl">Limpiar borde</span><input type="range" id="inSpill" min="0" max="100" value="85"><span class="val" id="vInSpill">85</span></div>
+        <div class="row"><span class="lbl">Luz del fondo</span><input type="range" id="inWrap" min="0" max="100" value="38"><span class="val" id="vInWrap">38</span></div>
+        <div class="row"><span class="lbl">Grano común</span><input type="range" id="inGrano" min="0" max="100" value="14"><span class="val" id="vInGrano">14</span></div>
+        <p class="note"><b>Limpiar borde</b> quita del cabello el color del fondo viejo. <b>Luz del fondo</b> derrama la luz del paisaje sobre el contorno, que es lo que hace que deje de verse pegado. <b>Grano</b> le da a todo la misma textura.</p>
+      </div>
+
+      <div class="grp">
         <h4>Acabado</h4>
         <div class="sw"><span>Sombra suave</span><input type="checkbox" id="shOn" checked><label class="tg" for="shOn"></label></div>
         <div class="sw"><span>Igualar color con el fondo</span><input type="checkbox" id="tnOn" checked><label class="tg" for="tnOn"></label></div>
         <div class="sw"><span>Espejo</span><input type="checkbox" id="flip"><label class="tg" for="flip"></label></div>
         <div class="mini"><button id="bAuto"><span class="ic" data-i="sparkles"></span>Recalcular color</button></div>
+      </div>
+
+      <div class="grp">
+        <h4>¿Algo no funciona?</h4>
+        <p class="note" style="margin-top:2px">Si el recorte no sale, copia el informe y mándalo por WhatsApp al equipo técnico. Lleva el modelo del teléfono y en qué paso se quedó.</p>
+        <div class="mini"><button id="bInforme">Copiar informe de diagnóstico</button></div>
       </div>
 
       <div class="grp">
@@ -365,7 +381,8 @@ function drawFirma(ctx,size){
   ctx.restore();
 }
 const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || matchMedia('(pointer:coarse)').matches;
-const MAXEDIT = isMobile ? 1280 : 1600;
+const lowRAM = (navigator.deviceMemory && navigator.deviceMemory<=4);
+const MAXEDIT = isMobile ? (lowRAM?900:1100) : 1600;
 const ICONS={"camera": "<path d='M13.997 4a2 2 0 0 1 1.76 1.05l.486.9A2 2 0 0 0 18.003 7H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.997a2 2 0 0 0 1.759-1.048l.489-.904A2 2 0 0 1 10.004 4z' /> <circle cx='12' cy='13' r='3' />", "check": "<path d='M20 6 9 17l-5-5' />", "download": "<path d='M12 15V3' /> <path d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4' /> <path d='m7 10 5 5 5-5' />", "eraser": "<path d='M21 21H8a2 2 0 0 1-1.42-.587l-3.994-3.999a2 2 0 0 1 0-2.828l10-10a2 2 0 0 1 2.829 0l5.999 6a2 2 0 0 1 0 2.828L12.834 21' /> <path d='m5.082 11.09 8.828 8.828' />", "image": "<rect width='18' height='18' x='3' y='3' rx='2' ry='2' /> <circle cx='9' cy='9' r='2' /> <path d='m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21' />", "move": "<path d='M12 2v20' /> <path d='m15 19-3 3-3-3' /> <path d='m19 9 3 3-3 3' /> <path d='M2 12h20' /> <path d='m5 9-3 3 3 3' /> <path d='m9 5 3-3 3 3' />", "paintbrush": "<path d='m14.622 17.897-10.68-2.913' /> <path d='M18.376 2.622a1 1 0 1 1 3.002 3.002L17.36 9.643a.5.5 0 0 0 0 .707l.944.944a2.41 2.41 0 0 1 0 3.408l-.944.944a.5.5 0 0 1-.707 0L8.354 7.348a.5.5 0 0 1 0-.707l.944-.944a2.41 2.41 0 0 1 3.408 0l.944.944a.5.5 0 0 0 .707 0z' /> <path d='M9 8c-1.804 2.71-3.97 3.46-6.583 3.948a.507.507 0 0 0-.302.819l7.32 8.883a1 1 0 0 0 1.185.204C12.735 20.405 16 16.792 16 15' />", "palette": "<path d='M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z' /> <circle cx='13.5' cy='6.5' r='.5' fill='currentColor' /> <circle cx='17.5' cy='10.5' r='.5' fill='currentColor' /> <circle cx='6.5' cy='12.5' r='.5' fill='currentColor' /> <circle cx='8.5' cy='7.5' r='.5' fill='currentColor' />", "plus": "<path d='M5 12h14' /> <path d='M12 5v14' />", "refresh-cw": "<path d='M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8' /> <path d='M21 3v5h-5' /> <path d='M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16' /> <path d='M8 16H3v5' />", "rotate-ccw": "<path d='M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8' /> <path d='M3 3v5h5' />", "scan": "<path d='M3 7V5a2 2 0 0 1 2-2h2' /> <path d='M17 3h2a2 2 0 0 1 2 2v2' /> <path d='M21 17v2a2 2 0 0 1-2 2h-2' /> <path d='M7 21H5a2 2 0 0 1-2-2v-2' />", "share-2": "<circle cx='18' cy='5' r='3' /> <circle cx='6' cy='12' r='3' /> <circle cx='18' cy='19' r='3' /> <line x1='8.59' x2='15.42' y1='13.51' y2='17.49' /> <line x1='15.41' x2='8.59' y1='6.51' y2='10.49' />", "sliders-horizontal": "<path d='M10 5H3' /> <path d='M12 19H3' /> <path d='M14 3v4' /> <path d='M16 17v4' /> <path d='M21 12h-9' /> <path d='M21 19h-5' /> <path d='M21 5h-7' /> <path d='M8 10v4' /> <path d='M8 12H3' />", "sparkles": "<path d='M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z' /> <path d='M20 2v4' /> <path d='M22 4h-4' /> <circle cx='4' cy='20' r='2' />", "undo-2": "<path d='M9 14 4 9l5-5' /> <path d='M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11' />", "x": "<path d='M18 6 6 18' /> <path d='m6 6 12 12' />"};
 function ic(n){return '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true">'+(ICONS[n]||'')+'</svg>';}
 function hydrateIcons(root){(root||document).querySelectorAll('[data-i]').forEach(el=>{
@@ -383,12 +400,71 @@ const S={
   tf:{scale:1,x:0,y:0,rot:0,flip:false},
   fx:{feather:1.4,shrink:1,crisp:55,
       shadow:{on:true,blur:26,op:36,dist:14,ang:135},
+      integrar:{on:true, spill:85, wrap:38, grano:14, suavizar:35},
       tone:{on:true,mix:45,exp:0,temp:0,sat:0,con:0}},
   selected:false, hoverH:null, fmt:'png', undo:[], redo:[], busy:false
 };
 
+/* ===================== diagnóstico ===================== */
+const LOG=[]; let ETAPA='inicio';
+function log(msg,extra){
+  const t=((performance.now())/1000).toFixed(2);
+  LOG.push(t+'s ['+ETAPA+'] '+msg+(extra?' :: '+extra:''));
+  if(LOG.length>120) LOG.shift();
+}
+function etapa(e){ ETAPA=e; log('→ '+e); }
+window.addEventListener('error',e=>log('ERROR JS', (e.message||'')+' @'+(e.filename||'').split('/').pop()+':'+e.lineno));
+window.addEventListener('unhandledrejection',e=>log('PROMESA RECHAZADA', String(e.reason&&(e.reason.message||e.reason)).slice(0,180)));
+function soporte(){
+  const d={};
+  try{ const c=document.createElement('canvas');
+    d.webgl2=!!c.getContext('webgl2'); d.webgl=!!(c.getContext('webgl')||c.getContext('experimental-webgl'));
+  }catch(e){ d.webgl='error'; }
+  d.webgpu=!!navigator.gpu;
+  d.wasm=(typeof WebAssembly==='object');
+  try{ d.simd=WebAssembly.validate(new Uint8Array([0,97,115,109,1,0,0,0,1,5,1,96,0,1,123,3,2,1,0,10,10,1,8,0,65,0,253,15,253,98,11])); }catch(e){ d.simd=false; }
+  d.sab=(typeof SharedArrayBuffer!=='undefined');
+  d.idb=(typeof indexedDB!=='undefined');
+  d.share=!!(navigator.canShare);
+  return d;
+}
+function informe(){
+  const s=soporte();
+  const L=[];
+  L.push('— INFORME · Súbete a la Bernabeta —');
+  L.push('fecha: '+new Date().toISOString());
+  L.push('url: '+location.href);
+  L.push('navegador: '+navigator.userAgent);
+  L.push('idioma: '+navigator.language+' · pantalla: '+screen.width+'x'+screen.height+'@'+(window.devicePixelRatio||1));
+  L.push('RAM declarada: '+(navigator.deviceMemory||'?')+' GB · núcleos: '+(navigator.hardwareConcurrency||'?'));
+  L.push('soporte: '+JSON.stringify(s));
+  L.push('motor: '+($('model')?$('model').value:'?')+' · MAXEDIT: '+MAXEDIT+' · movil: '+isMobile);
+  if(S.photo) L.push('foto de trabajo: '+S.photo.width+'x'+S.photo.height);
+  if(S.aiMask) L.push('mascara IA: '+S.aiMask.width+'x'+S.aiMask.height);
+  try{ L.push('lienzo en blanco: '+lienzoEnBlanco()); }catch(e){}
+  L.push('etapa alcanzada: '+ETAPA);
+  L.push('');
+  L.push('— traza —');
+  LOG.forEach(x=>L.push(x));
+  return L.join('\n');
+}
+async function copiarInforme(){
+  const txt=informe();
+  try{ await navigator.clipboard.writeText(txt); toast('Informe copiado. Pégalo en WhatsApp y envíalo al equipo técnico.',6000); }
+  catch(e){
+    const ta=document.createElement('textarea');
+    ta.value=txt; ta.style.cssText='position:fixed;top:10%;left:5%;width:90%;height:70%;z-index:99;font-size:11px';
+    document.body.appendChild(ta); ta.select();
+    toast('Copia este texto y envíalo al equipo técnico.',8000);
+    ta.onblur=()=>ta.remove();
+  }
+}
+
 /* ===================== utilidades ===================== */
 function mkCanvas(w,h){const c=document.createElement('canvas');c.width=w;c.height=h;return c;}
+/* iOS Safari mantiene un presupuesto de memoria de lienzos y, al pasarse, los deja
+   en blanco sin lanzar error. Poner 0x0 libera esa memoria de inmediato. */
+function free(c){ try{ if(c&&c.width){ c.width=0; c.height=0; } }catch(e){} }
 function toast(m,ms=2800){const t=$('toast');t.textContent=m;t.classList.add('on');
   clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),ms);}
 function overlay(on,title,msg){const o=$('ov');if(title)$('ovTitle').textContent=title;
@@ -409,6 +485,123 @@ async function getEngine(){
     RB=await import('https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/+esm');
     $('engine').textContent='IA lista'; $('engine').className='pill ok'; return RB;
   }catch(e){ RBerr=e; $('engine').textContent='sin IA'; $('engine').className='pill er'; throw e; }
+}
+
+/* ===================== motor ligero: MediaPipe SelfieMulticlass ===================== */
+const MP={
+  bundleUrl:'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/vision_bundle.mjs',
+  wasmPath :'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wasm',
+  modelUrl :'https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_multiclass_256x256/float32/latest/selfie_multiclass_256x256.tflite',
+  vision:null, seg:null, delegate:null
+};
+async function mpSession(){
+  if(MP.seg) return MP.seg;
+  etapa('mp:cargando bundle');
+  if(!MP.vision) MP.vision=await import(MP.bundleUrl);
+  prog(.05,'Preparando el motor…');
+  log('bundle mediapipe cargado');
+  const fileset=await MP.vision.FilesetResolver.forVisionTasks(MP.wasmPath);
+  etapa('mp:descargando modelo');
+  const buf=await fetchModel(MP.modelUrl,'mp-selfie-multiclass',(pr,g,t)=>
+    prog(.05+pr*.8,'Descargando '+(g/1048576).toFixed(0)+' / '+(t/1048576).toFixed(0)+' MB'));
+  const make=async d=>MP.vision.ImageSegmenter.createFromOptions(fileset,{
+    baseOptions:{modelAssetBuffer:buf, delegate:d},
+    outputCategoryMask:false, outputConfidenceMasks:true, runningMode:'IMAGE'});
+  etapa('mp:creando segmentador');
+  try{ MP.seg=await make('GPU'); MP.delegate='GPU'; }
+  catch(e){ console.warn('MediaPipe sin GPU, uso CPU',e); MP.seg=await make('CPU'); MP.delegate='CPU'; }
+  log('segmentador listo con '+MP.delegate);
+  return MP.seg;
+}
+
+/* --- filtro guiado rápido (He et al.): afina el borde usando la foto como guía --- */
+function boxIntegral(src,w,h,r,out){
+  const W=w+1, I=new Float64Array(W*(h+1));
+  for(let y=0;y<h;y++){ let s=0; const o=y*w, q=(y+1)*W;
+    for(let x=0;x<w;x++){ s+=src[o+x]; I[q+x+1]=I[q-W+x+1]+s; } }
+  for(let y=0;y<h;y++){
+    const y0=Math.max(0,y-r), y1=Math.min(h,y+r+1);
+    for(let x=0;x<w;x++){
+      const x0=Math.max(0,x-r), x1=Math.min(w,x+r+1);
+      const a=I[y1*W+x1]-I[y0*W+x1]-I[y1*W+x0]+I[y0*W+x0];
+      out[y*w+x]=a/((y1-y0)*(x1-x0));
+    }
+  }
+  return out;
+}
+function refinarBorde(alpha, gris, w, h, eps){
+  // se calculan los coeficientes a bajo escala y se aplican a resolución completa
+  const s=4, lw=Math.max(8,Math.ceil(w/s)), lh=Math.max(8,Math.ceil(h/s)), n=lw*lh;
+  const Il=new Float32Array(n), pl=new Float32Array(n);
+  for(let y=0;y<lh;y++){ const sy=Math.min(h-1,y*s);
+    for(let x=0;x<lw;x++){ const sx=Math.min(w-1,x*s), i=sy*w+sx, j=y*lw+x;
+      Il[j]=gris[i]/255; pl[j]=alpha[i]; } }
+  const r=Math.max(2,Math.round(Math.max(lw,lh)/40));
+  const t1=new Float32Array(n), t2=new Float32Array(n);
+  const mI=boxIntegral(Il,lw,lh,r,new Float32Array(n));
+  const mp_=boxIntegral(pl,lw,lh,r,new Float32Array(n));
+  for(let i=0;i<n;i++) t1[i]=Il[i]*Il[i];
+  const cII=boxIntegral(t1,lw,lh,r,new Float32Array(n));
+  for(let i=0;i<n;i++) t2[i]=Il[i]*pl[i];
+  const cIp=boxIntegral(t2,lw,lh,r,new Float32Array(n));
+  const A=new Float32Array(n), B=new Float32Array(n);
+  for(let i=0;i<n;i++){
+    const varI=cII[i]-mI[i]*mI[i], cov=cIp[i]-mI[i]*mp_[i];
+    A[i]=cov/(varI+eps); B[i]=mp_[i]-A[i]*mI[i];
+  }
+  const mA=boxIntegral(A,lw,lh,r,new Float32Array(n));
+  const mB=boxIntegral(B,lw,lh,r,new Float32Array(n));
+  // aplicación a resolución completa con interpolación bilineal de los coeficientes
+  const out=new Float32Array(w*h);
+  for(let y=0;y<h;y++){
+    const fy=Math.min(lh-1.001,y/s), y0=fy|0, ty=fy-y0, y1=Math.min(lh-1,y0+1);
+    for(let x=0;x<w;x++){
+      const fx=Math.min(lw-1.001,x/s), x0=fx|0, tx=fx-x0, x1=Math.min(lw-1,x0+1);
+      const i00=y0*lw+x0,i01=y0*lw+x1,i10=y1*lw+x0,i11=y1*lw+x1;
+      const a=(mA[i00]*(1-tx)+mA[i01]*tx)*(1-ty)+(mA[i10]*(1-tx)+mA[i11]*tx)*ty;
+      const b=(mB[i00]*(1-tx)+mB[i01]*tx)*(1-ty)+(mB[i10]*(1-tx)+mB[i11]*tx)*ty;
+      const i=y*w+x;
+      out[i]=a*(gris[i]/255)+b;
+    }
+  }
+  return out;
+}
+
+async function mpMask(){
+  const seg=await mpSession();
+  etapa('mp:segmentando'); prog(.9,'Analizando la imagen…'); await new Promise(r=>setTimeout(r,20));
+  const w=S.photo.width, h=S.photo.height;
+  let res=seg.segment(S.photo);
+  if(res && typeof res.then==='function') res=await res;
+  const cm=res.confidenceMasks && res.confidenceMasks[0];   // clase 0 = fondo
+  if(!cm) throw new Error('el motor no devolvió máscara');
+  const f=cm.getAsFloat32Array();
+  const mw=cm.width||w, mh=cm.height||h;
+  // alfa = 1 - confianza de fondo
+  const alpha=new Float32Array(mw*mh);
+  for(let i=0;i<alpha.length;i++) alpha[i]=1-f[i];
+  try{ res.close&&res.close(); }catch(e){}
+  // guía en gris a la misma resolución que la máscara
+  const g=mkCanvas(mw,mh), gc=g.getContext('2d',{willReadFrequently:true});
+  gc.drawImage(S.photo,0,0,mw,mh);
+  const gd=gc.getImageData(0,0,mw,mh).data;
+  const gris=new Uint8ClampedArray(mw*mh);
+  for(let i=0,j=0;i<gris.length;i++,j+=4) gris[i]=(gd[j]*77+gd[j+1]*150+gd[j+2]*29)>>8;
+  free(g);
+  etapa('mp:afinando borde'); log('mascara '+mw+'x'+mh); prog(.96,'Afinando el borde…'); await new Promise(r=>setTimeout(r,20));
+  const q=refinarBorde(alpha,gris,mw,mh,8e-5);
+  let sum=0;
+  const md=new ImageData(mw,mh), qd=md.data;
+  for(let i=0,j=0;i<q.length;i++,j+=4){
+    const v=clamp((q[i]-.55)*7+.5,0,1);
+    sum+=v; qd[j]=255;qd[j+1]=255;qd[j+2]=255;qd[j+3]=v*255;
+  }
+  if(sum/q.length<.005||sum/q.length>.995) throw new Error('máscara inválida');
+  const mc=mkCanvas(mw,mh); mc.getContext('2d').putImageData(md,0,0);
+  if(mw===w&&mh===h) return mc;
+  const fin=mkCanvas(w,h), fc=fin.getContext('2d');
+  fc.imageSmoothingQuality='high'; fc.drawImage(mc,0,0,w,h); free(mc);
+  return fin;
 }
 
 /* ===================== motor BEN2 (ONNX Runtime Web) ===================== */
@@ -485,6 +678,7 @@ async function ben2Mask(){
 
 /* ===================== carga de foto + recorte ===================== */
 async function loadPhoto(file){
+  etapa('cargando foto');
   try{
     const url=typeof file==='string'?file:URL.createObjectURL(file);
     const img=await loadImg(url);
@@ -496,6 +690,7 @@ async function loadPhoto(file){
     const m=S.mask.getContext('2d'); m.fillStyle='#fff'; m.fillRect(0,0,w,h);
     S.aiMask=null; S.undo=[]; S.redo=[]; refreshUndo();
     S.tf={scale:1,x:0,y:0,rot:0,flip:false}; S.view={z:1,x:0,y:0};
+    log('foto lista '+S.photo.width+'x'+S.photo.height);
     $('start').classList.add('hide');
     $('acts').style.display='flex'; $('bgs').style.display='flex'; $('bgLbl').style.display='block';
     syncUI();
@@ -505,18 +700,24 @@ async function loadPhoto(file){
 
 async function runAI(){
   if(!S.photo||S.busy) return;
-  const ben=$('model').value==='ben2';
+  const motor=$('model').value;
+  const ben=motor==='ben2', ligero=motor==='mp';
   S.busy=true;
-  const primera = !localStorage.getItem('ya-uso') && !ben;
+  const primera = !localStorage.getItem('ya-uso-'+motor);
   overlay(true, ben?'Recortando en máxima calidad…':'Quitando el fondo…',
-    primera ? 'La primera vez se descarga el motor (unos 88 MB). Conéctate a WiFi. Solo pasa una vez.'
+    primera ? (ligero?'La primera vez se descarga el motor (unos 27 MB). Solo pasa una vez.'
+                    :'La primera vez se descarga el motor. Conéctate a WiFi.')
             : 'Tarda unos segundos.');
-  try{ localStorage.setItem('ya-uso','1'); }catch(e){}
+  try{ localStorage.setItem('ya-uso-'+motor,'1'); }catch(e){}
+  etapa('recorte:'+motor);
   try{
+    if(ligero){
+      swapMask(await mpMask());
+      finishAI(MP.delegate==='GPU'?'ligero · GPU':'ligero');
+      return;
+    }
     if(ben){
-      const m=await ben2Mask();
-      S.mask=m; S.aiMask=mkCanvas(m.width,m.height); S.aiMask.getContext('2d').drawImage(m,0,0);
-      S.undo=[];S.redo=[];refreshUndo(); S.procDirty=true;
+      swapMask(await ben2Mask());
       finishAI('máxima calidad · '+(BEN2.ep==='webgpu'?'GPU':'CPU'));
       return;
     }
@@ -537,30 +738,58 @@ async function runAI(){
     tc.drawImage(im,0,0,w,h);
     const d=tc.getImageData(0,0,w,h),p=d.data;
     for(let i=0;i<p.length;i+=4){p[i]=255;p[i+1]=255;p[i+2]=255;}
-    S.mask=mkCanvas(w,h); S.mask.getContext('2d').putImageData(d,0,0);
-    S.aiMask=mkCanvas(w,h); S.aiMask.getContext('2d').drawImage(S.mask,0,0);
-    S.undo=[];S.redo=[];refreshUndo(); S.procDirty=true;
+    const nm=mkCanvas(w,h); nm.getContext('2d').putImageData(d,0,0); free(tmp);
+    swapMask(nm);
     finishAI();
   }catch(e){
     console.error(e);
+    log('FALLO EN '+ETAPA, String(e&&(e.message||e)).slice(0,200));
     if($('model').value==='ben2'){
       BEN2.session=null;
       const msg=String(e&&e.message||e);
       toast(/memory|allocat|OOM|buffer|Aborted/i.test(msg)
         ?'Este equipo no tiene memoria para la máxima calidad. Uso el motor normal.'
         :'La máxima calidad no funcionó aquí. Uso el motor normal.',5200);
-      $('model').value='isnet_fp16'; $('ben2Note').style.display='none';
+      $('model').value='mp'; $('ben2Note').style.display='none';
       S.busy=false; overlay(false); return runAI();
     }
-    toast('No se pudo quitar el fondo automáticamente. Puedes borrarlo a mano en “Retocar”.',5600);
+    S.fallo=true;
+    toast('No se pudo quitar el fondo. Abre Opciones ⚙ y toca «Enviar informe» para que lo revisemos.',9000);
   }finally{ S.busy=false; overlay(false); S.procDirty=true; render(); }
 }
+function swapMask(m){
+  free(S.mask); free(S.aiMask);
+  S.mask=m;
+  S.aiMask=mkCanvas(m.width,m.height); S.aiMask.getContext('2d').drawImage(m,0,0);
+  S.undo=[]; S.redo=[]; refreshUndo(); S.procDirty=true;
+}
 function finishAI(extra){
+  etapa('componiendo');
   autoFit();          // encuadre automático
   S.selected=fine;    // en PC deja la caja visible para que se vea que se puede ajustar
   autoTone();         // igualar calidez con el fondo
   render();
+  if(lienzoEnBlanco()){
+    log('LIENZO EN BLANCO tras componer'); S.fallo=true;
+    toast('Tu navegador se quedó sin memoria y no pudo dibujar la imagen. '+
+          'Prueba con Chrome, cierra otras pestañas y vuelve a intentarlo.',9000);
+    return;
+  }
   toast('¡Listo! '+(extra?'('+extra+') ':'')+(fine?'Ajústala arrastrando las esquinas.':'Muévela con el dedo.'),3400);
+}
+
+/* Comprueba que el lienzo realmente tenga píxeles: en algunos Android (Honor entre
+   ellos) y en iOS, al agotarse la memoria el lienzo queda vacío SIN lanzar error. */
+function lienzoEnBlanco(){
+  try{
+    const s=48, t=mkCanvas(s,s), c=t.getContext('2d',{willReadFrequently:true});
+    c.drawImage(view,0,0,s,s);
+    const d=c.getImageData(0,0,s,s).data;
+    let vivos=0;
+    for(let i=3;i<d.length;i+=4) if(d[i]>8) vivos++;
+    free(t);
+    return vivos < (s*s)*0.02;
+  }catch(e){ return false; }
 }
 
 /* ===================== procesado ===================== */
@@ -608,6 +837,9 @@ function processSubject(fast,rect){
     }
     b.putImageData(id,0,0);
   }
+  if(!fast && S.fx.integrar.on && S.fx.integrar.spill>0){
+    try{ descontaminar(wB, S.fx.integrar.spill/100); }catch(e){ console.warn('descontaminar',e); }
+  }
   S.proc=wB;
   if(!S.silh||S.silh.width!==w||S.silh.height!==h) S.silh=mkCanvas(w,h);
   const s=S.silh.getContext('2d');
@@ -616,6 +848,83 @@ function processSubject(fast,rect){
   s.fillStyle='#000'; s.fillRect(R.x,R.y,R.w,R.h);
   s.globalCompositeOperation='source-over'; s.restore();
   S.procDirty=!!fast;
+}
+
+/* ===================== integración con el fondo ===================== */
+/* 1. Descontaminar: en los píxeles semitransparentes (cabello, bordes) el color todavía
+   arrastra el fondo ORIGINAL de la foto. Se estima el color real extendiendo hacia afuera
+   el color del interior opaco (difuminado premultiplicado) y se reemplaza. */
+function descontaminar(cv, fuerza){
+  const w=cv.width, hh=cv.height, n=w*hh;
+  const c=cv.getContext('2d',{willReadFrequently:true});
+  const id=c.getImageData(0,0,w,hh), d=id.data;
+  const pr=new Float32Array(n), pg=new Float32Array(n), pb=new Float32Array(n), pa=new Float32Array(n);
+  for(let i=0,j=0;i<n;i++,j+=4){
+    const a=d[j+3]/255;
+    // solo el núcleo bien opaco aporta color de referencia
+    const wgt = a>0.92 ? 1 : 0;
+    pa[i]=wgt; pr[i]=d[j]*wgt; pg[i]=d[j+1]*wgt; pb[i]=d[j+2]*wgt;
+  }
+  const r=Math.max(2,Math.round(Math.max(w,hh)/220));
+  const br=boxIntegral(pr,w,hh,r,new Float32Array(n));
+  const bg=boxIntegral(pg,w,hh,r,new Float32Array(n));
+  const bb=boxIntegral(pb,w,hh,r,new Float32Array(n));
+  const ba=boxIntegral(pa,w,hh,r,new Float32Array(n));
+  for(let i=0,j=0;i<n;i++,j+=4){
+    const a=d[j+3]/255;
+    if(a<=0.004 || a>0.97) continue;
+    const s=ba[i]; if(s<1e-4) continue;
+    const er=br[i]/s, eg=bg[i]/s, eb=bb[i]/s;
+    const t=(1-a)*fuerza;                 // cuanto más transparente, más se corrige
+    d[j]  = d[j]  +(er-d[j])  *t;
+    d[j+1]= d[j+1]+(eg-d[j+1])*t;
+    d[j+2]= d[j+2]+(eb-d[j+2])*t;
+  }
+  c.putImageData(id,0,0);
+}
+
+/* 2. Banda de borde suave: alfa menos alfa erosionado, y luego difuminada para que
+   la envoltura de luz se desvanezca hacia adentro en vez de dejar un anillo duro. */
+function bandaBorde(src, px){
+  const w=src.width, hh=src.height;
+  // versión erosionada: difuminar y subir el umbral
+  const e=mkCanvas(w,hh), ec=e.getContext('2d',{willReadFrequently:true});
+  ec.filter='blur('+(px*1.8).toFixed(1)+'px)';
+  ec.drawImage(src,0,0);
+  ec.filter='none';
+  const id=ec.getImageData(0,0,w,hh), d=id.data;
+  for(let j=3;j<d.length;j+=4) d[j]= d[j]>205?255:0;
+  ec.putImageData(id,0,0);
+  // banda = sujeto − erosionado
+  const b=mkCanvas(w,hh), c=b.getContext('2d');
+  c.drawImage(src,0,0);
+  c.globalCompositeOperation='destination-out';
+  c.drawImage(e,0,0);
+  c.globalCompositeOperation='source-over';
+  free(e);
+  // difuminar la banda y recortarla al sujeto para que no se salga del contorno
+  const f=mkCanvas(w,hh), fc=f.getContext('2d');
+  fc.filter='blur('+(px*1.6).toFixed(1)+'px)';
+  fc.drawImage(b,0,0);
+  fc.filter='none';
+  fc.globalCompositeOperation='destination-in';
+  fc.drawImage(src,0,0);
+  free(b);
+  return f;
+}
+
+/* 3. Grano: una textura fina común a fondo y sujeto los hace ver de la misma toma. */
+let GRANO=null;
+function granoTile(){
+  if(GRANO) return GRANO;
+  const s=128, c=mkCanvas(s,s), x=c.getContext('2d');
+  const id=x.createImageData(s,s), d=id.data;
+  for(let i=0;i<d.length;i+=4){
+    // ruido gaussiano suave: dos uniformes promediados, amplitud corta
+    const v=128+((Math.random()+Math.random())-1)*30;
+    d[i]=d[i+1]=d[i+2]=clamp(v,0,255); d[i+3]=255;
+  }
+  x.putImageData(id,0,0); GRANO=c; return c;
 }
 
 /* ===================== composición ===================== */
@@ -642,6 +951,41 @@ function drawComposite(ctx,size,o={}){
     put(S.silh,Math.cos(r)*SH.dist*K,Math.sin(r)*SH.dist*K); ctx.restore();
   }
   put(S.proc);
+
+  const IN=S.fx.integrar;
+  if(IN.on && !o.cutout && S.bg && S.bg.img && !S.painting){
+    // --- envoltura de luz: el fondo desenfocado se derrama sobre el anillo del borde ---
+    if(IN.wrap>0){
+      const band=bandaBorde(S.proc, Math.max(2.0, 4.5*S.proc.width/1000));
+      const lay=mkCanvas(size,size), lc=lay.getContext('2d');
+      const im=S.bg.img, sc=Math.max(size/im.width,size/im.height);
+      lc.filter='blur('+(size/42).toFixed(1)+'px)';
+      lc.drawImage(im,(size-im.width*sc)/2,(size-im.height*sc)/2,im.width*sc,im.height*sc);
+      lc.filter='none';
+      lc.globalCompositeOperation='destination-in';
+      lc.save();
+      lc.translate(B.cx,B.cy); lc.rotate(S.tf.rot*Math.PI/180);
+      if(S.tf.flip) lc.scale(-1,1);
+      lc.drawImage(band,-B.w/2,-B.h/2,B.w,B.h);
+      lc.restore();
+      ctx.save();
+      ctx.globalCompositeOperation='lighten';
+      ctx.globalAlpha=IN.wrap/100;
+      ctx.drawImage(lay,0,0);
+      ctx.restore();
+      free(lay); free(band);
+    }
+    // --- grano común: unifica la textura de foto y acuarela ---
+    if(IN.grano>0){
+      ctx.save();
+      ctx.globalCompositeOperation='soft-light';
+      ctx.globalAlpha=IN.grano/100*0.55;
+      const pat=ctx.createPattern(granoTile(),'repeat');
+      ctx.fillStyle=pat; ctx.fillRect(0,0,size,size);
+      ctx.restore();
+    }
+  }
+
   if(!o.cutout) drawFirma(ctx,size);
   ctx.restore();
 }
@@ -914,9 +1258,25 @@ function paintTo(pt,from){
   m.globalCompositeOperation='source-over';
   S.procDirty=true; renderRefine();
 }
-function snap(){const c=mkCanvas(S.mask.width,S.mask.height);c.getContext('2d').drawImage(S.mask,0,0);return c;}
-function pushUndo(){if(!S.mask)return;S.undo.push(snap());if(S.undo.length>18)S.undo.shift();S.redo=[];refreshUndo();}
-function doUndo(){if(!S.undo.length)return;S.redo.push(snap());S.mask=S.undo.pop();S.procDirty=true;refreshUndo();render();}
+/* Las instantáneas guardan sólo el canal alfa en un Uint8Array (1 byte por píxel,
+   en el montón de JS) en vez de un lienzo RGBA completo: 4 veces menos memoria y,
+   sobre todo, fuera del presupuesto de lienzos que iOS vigila. */
+function snap(){
+  const w=S.mask.width,h=S.mask.height;
+  const d=S.mask.getContext('2d',{willReadFrequently:true}).getImageData(0,0,w,h).data;
+  const a=new Uint8Array(w*h);
+  for(let i=0,j=3;i<a.length;i++,j+=4) a[i]=d[j];
+  return {w,h,a};
+}
+function restore(s){
+  const c=S.mask.getContext('2d');
+  const id=c.createImageData(s.w,s.h), d=id.data;
+  for(let i=0,j=0;i<s.a.length;i++,j+=4){ d[j]=255;d[j+1]=255;d[j+2]=255;d[j+3]=s.a[i]; }
+  c.putImageData(id,0,0);
+}
+const MAXUNDO = isMobile?8:16;
+function pushUndo(){if(!S.mask)return;S.undo.push(snap());if(S.undo.length>MAXUNDO)S.undo.shift();S.redo=[];refreshUndo();}
+function doUndo(){if(!S.undo.length)return;S.redo.push(snap());restore(S.undo.pop());S.procDirty=true;refreshUndo();render();}
 function refreshUndo(){$('bUndo').disabled=!S.undo.length;}
 
 /* ===================== tono automático ===================== */
@@ -1088,18 +1448,26 @@ const R=[];
 R.push(bindRange('feather',()=>S.fx.feather,v=>S.fx.feather=v,v=>v.toFixed(1)));
 R.push(bindRange('shrink',()=>S.fx.shrink,v=>S.fx.shrink=v,v=>v.toFixed(1)));
 R.push(bindRange('crisp',()=>S.fx.crisp,v=>S.fx.crisp=v,v=>v));
+R.push(bindRange('inSpill',()=>S.fx.integrar.spill,v=>S.fx.integrar.spill=v,v=>v));
+R.push(bindRange('inWrap',()=>S.fx.integrar.wrap,v=>S.fx.integrar.wrap=v,v=>v));
+R.push(bindRange('inGrano',()=>S.fx.integrar.grano,v=>S.fx.integrar.grano=v,v=>v));
 function syncUI(){R.forEach(r=>r._sync());}
 $('shOn').onchange=e=>{S.fx.shadow.on=e.target.checked;render();};
+$('inOn').onchange=e=>{S.fx.integrar.on=e.target.checked;S.procDirty=true;render();};
 $('tnOn').onchange=e=>{S.fx.tone.on=e.target.checked;S.procDirty=true;render();};
 $('flip').onchange=e=>{S.tf.flip=e.target.checked;render();};
 $('bAuto').onclick=()=>{autoTone();render();toast('Color igualado con el fondo.');};
 $('bReAI').onclick=()=>{$('pro').classList.remove('on');$('bPro').classList.remove('on');runAI();};
 $('bAiReset').onclick=()=>{
   if(!S.aiMask)return toast('No hay recorte automático guardado.');
-  pushUndo(); S.mask=mkCanvas(S.aiMask.width,S.aiMask.height);
-  S.mask.getContext('2d').drawImage(S.aiMask,0,0); S.procDirty=true; render(); toast('Retoques deshechos.');
+  pushUndo();
+  const c=S.mask.getContext('2d');
+  c.clearRect(0,0,S.mask.width,S.mask.height);
+  c.drawImage(S.aiMask,0,0);
+  S.procDirty=true; render(); toast('Retoques deshechos.');
 };
 $('bReset').onclick=()=>{ if(confirm('¿Empezar de cero?')) location.reload(); };
+$('bInforme').onclick=copiarInforme;
 $('model').onchange=e=>{
   const b=e.target.value==='ben2';
   $('ben2Note').style.display=b?'block':'none';
@@ -1133,11 +1501,11 @@ window.addEventListener('resize',render);
 (async function init(){
   $('model').value='isnet_fp16';
   hydrateIcons();
+  log('arranque · '+navigator.userAgent.slice(0,90));
+  log('soporte '+JSON.stringify(soporte()));
   await loadFirma();
-  if(isMobile){                    // en celular no se ofrece cambiar de motor
-    $('model').value='isnet_fp16';
-    $('grpModelo').style.display='none';
-  }
+  $('model').value='mp';           // el ligero es el predeterminado en todos lados
+  if(isMobile) $('grpModelo').style.display='none';
   try{ if(navigator.canShare && navigator.canShare({files:[new File([new Blob()],'a.png',{type:'image/png'})]}))
     $('icSave').innerHTML=ic('share-2'); }catch(e){}
   buildBgs(); syncUI();
